@@ -13,7 +13,7 @@ class CreateUsersTable extends Migration
             $table->string('username')->unique();
             $table->string('email')->unique();
             $table->string('password');
-            $table->tinyInteger('usertype')->comment('1 = Operator Ambulance, 2 = Operator Hospital, 3 = System Admin');
+            $table->tinyInteger('usertype')->comment('1 = Operator Ambulance, 2 = Operator Hospital, 3 = Operator System');
             $table->unsignedBigInteger('hospital_id')->nullable()->comment('Only for Operator Hospital'); // Relasi ke tabel hospitals
             $table->timestamps();
 

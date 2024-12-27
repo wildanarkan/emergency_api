@@ -2,35 +2,36 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Patient;
+use App\Models\User;
 use App\Models\Hospital;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
-class PatientController extends Controller
+class UserController extends Controller
 {
     public function index(Request $request)
     {
         $user = auth()->user();
 
-        if ($user->usertype == 2) { // Operator Hospital
-            $patients = Patient::where('hospital_id', $user->hospital_id)->get();
+        if ($user->usertype == 2) {
+            $users = User::where('hospital_id', $user->hospital_id)->get();
         } else {
-            $patients = Patient::all();
+            $users = User::with('hospital')->get();
         }
 
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'data' => $patients
+                'data' => $users
             ]);
         }
-        return view('patients.index', compact('patients'));
+        return view('users.index', compact('users'));
     }
 
     public function create(Request $request)
     {
-        $patient = null;
+        $user = null;
         $hospitals = Hospital::all();
 
         if ($request->expectsJson()) {
@@ -39,18 +40,27 @@ class PatientController extends Controller
                 'message' => 'Show create form'
             ]);
         }
-        return view('patients.form', compact('patient', 'hospitals'));
+        return view('users.form', compact('user', 'hospitals'));
     }
 
     public function store(Request $request)
     {
+        $authUser = auth()->user();
+
+        // Set default values for hospital operators
+        if ($authUser->usertype == 2) {
+            $request->merge([
+                'usertype' => 2,
+                'hospital_id' => $authUser->hospital_id
+            ]);
+        }
+
         $rules = [
-            'hospital_id' => 'required|exists:hospitals,id',
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:patients',
-            'phone' => 'nullable|string|max:15',
-            'date_of_birth' => 'nullable|date',
-            'gender' => 'nullable|string|max:10'
+            'username' => 'required|string|unique:users',
+            'email' => 'required|string|email|unique:users',
+            'password' => 'required|string|min:6',
+            'usertype' => 'required|integer|in:1,2,3',
+            'hospital_id' => 'required_if:usertype,2|exists:hospitals,id|nullable'
         ];
 
         if ($request->expectsJson()) {
@@ -58,43 +68,44 @@ class PatientController extends Controller
             if ($validator->fails()) {
                 return response()->json($validator->errors(), 422);
             }
-
-            $user = auth()->user();
-            if ($user->usertype == 2 && $user->hospital_id != $request->hospital_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized'
-                ], 403);
-            }
-
-            $patient = Patient::create($request->all());
-            return response()->json([
-                'success' => true,
-                'data' => $patient
-            ], 201);
+        } else {
+            $request->validate($rules);
         }
 
-        $request->validate($rules);
-        Patient::create($request->all());
-        return redirect()->route('patients.index')->with('success', 'Patient created successfully');
+        $userData = $request->all();
+        $userData['password'] = Hash::make($request->password);
+
+        if ($userData['usertype'] != 2) {
+            $userData['hospital_id'] = null;
+        }
+
+        $user = User::create($userData);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => $user
+            ], 201);
+        }
+        return redirect()->route('users.index')->with('success', 'User created successfully');
     }
 
     public function show(Request $request, $id)
     {
-        $user = auth()->user();
-        $patient = Patient::find($id);
+        $authUser = auth()->user();
+        $user = User::find($id);
 
-        if (!$patient) {
+        if (!$user) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Patient not found'
+                    'message' => 'User not found'
                 ], 404);
             }
             return abort(404);
         }
 
-        if ($user->usertype == 2 && $user->hospital_id != $patient->hospital_id) {
+        if ($authUser->usertype == 2 && $authUser->hospital_id != $user->hospital_id) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -107,17 +118,17 @@ class PatientController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'data' => $patient
+                'data' => $user
             ]);
         }
-        return view('patients.show', compact('patient'));
+        return view('users.show', compact('user'));
     }
 
-    public function edit(Request $request, Patient $patient)
+    public function edit(Request $request, User $user)
     {
-        $user = auth()->user();
-        
-        if ($user->usertype == 2 && $user->hospital_id != $patient->hospital_id) {
+        $authUser = auth()->user();
+
+        if ($authUser->usertype == 2 && $authUser->hospital_id != $user->hospital_id) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -128,32 +139,32 @@ class PatientController extends Controller
         }
 
         $hospitals = Hospital::all();
-        
+
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'data' => $patient
+                'data' => $user
             ]);
         }
-        return view('patients.form', compact('patient', 'hospitals'));
+        return view('users.form', compact('user', 'hospitals'));
     }
 
     public function update(Request $request, $id)
     {
-        $user = auth()->user();
-        $patient = Patient::find($id);
+        $authUser = auth()->user();
+        $user = User::find($id);
 
-        if (!$patient) {
+        if (!$user) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Patient not found'
+                    'message' => 'User not found'
                 ], 404);
             }
             return abort(404);
         }
 
-        if ($user->usertype == 2 && $user->hospital_id != $patient->hospital_id) {
+        if ($authUser->usertype == 2 && $authUser->hospital_id != $user->hospital_id) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -164,12 +175,11 @@ class PatientController extends Controller
         }
 
         $rules = [
-            'hospital_id' => 'required|exists:hospitals,id',
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:patients,email,' . $id,
-            'phone' => 'nullable|string|max:15',
-            'date_of_birth' => 'nullable|date',
-            'gender' => 'nullable|string|max:10'
+            'username' => 'required|string|unique:users,username,' . $id,
+            'email' => 'required|string|email|unique:users,email,' . $id,
+            'password' => 'nullable|string|min:6',
+            'usertype' => 'required|integer|in:1,2,3',
+            'hospital_id' => 'required_if:usertype,2|exists:hospitals,id|nullable'
         ];
 
         if ($request->expectsJson()) {
@@ -177,42 +187,46 @@ class PatientController extends Controller
             if ($validator->fails()) {
                 return response()->json($validator->errors(), 422);
             }
-
-            if ($user->usertype == 2 && $user->hospital_id != $request->hospital_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized'
-                ], 403);
-            }
-
-            $patient->update($request->all());
-            return response()->json([
-                'success' => true,
-                'data' => $patient
-            ]);
+        } else {
+            $request->validate($rules);
         }
 
-        $request->validate($rules);
-        $patient->update($request->all());
-        return redirect()->route('patients.index')->with('success', 'Patient updated successfully');
+        $userData = $request->except('password');
+        if ($request->filled('password')) {
+            $userData['password'] = Hash::make($request->password);
+        }
+
+        if ($userData['usertype'] != 2) {
+            $userData['hospital_id'] = null;
+        }
+
+        $user->update($userData);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => $user
+            ]);
+        }
+        return redirect()->route('users.index')->with('success', 'User updated successfully');
     }
 
     public function destroy(Request $request, $id)
     {
-        $user = auth()->user();
-        $patient = Patient::find($id);
+        $authUser = auth()->user();
+        $user = User::find($id);
 
-        if (!$patient) {
+        if (!$user) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Patient not found'
+                    'message' => 'User not found'
                 ], 404);
             }
             return abort(404);
         }
 
-        if ($user->usertype == 2 && $user->hospital_id != $patient->hospital_id) {
+        if ($authUser->usertype == 2 && $authUser->hospital_id != $user->hospital_id) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -222,14 +236,14 @@ class PatientController extends Controller
             return abort(403);
         }
 
-        $patient->delete();
+        $user->delete();
 
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Patient deleted successfully'
+                'message' => 'User deleted successfully'
             ]);
         }
-        return redirect()->route('patients.index')->with('success', 'Patient deleted successfully');
+        return redirect()->route('users.index')->with('success', 'User deleted successfully');
     }
 }
