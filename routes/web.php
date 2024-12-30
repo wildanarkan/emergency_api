@@ -21,14 +21,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Routes for Operator System only
-    // Route::middleware('admin')->group(function () {
-        Route::resource('hospitals', HospitalController::class);
-        Route::resource('users', UserController::class);
-    // });
+    Route::put('/patient/{id}/status', [PatientController::class, 'updateStatus'])->name('patient.updateStatus');
 
-    // Routes for Hospital Operator and Operator System
-    Route::resource('patients', PatientController::class);
 
-    // Route::get('profile', [UserController::class, 'profile'])->name('profile');
+    Route::resource('hospital', HospitalController::class);
+    Route::resource('user', UserController::class);
+    Route::resource('patient', PatientController::class);
 });

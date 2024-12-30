@@ -11,37 +11,59 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
+        $user = auth()->user(); // Ambil data user yang sedang login
 
-        if ($user->usertype == 3) { // Operator System
-            $hospitalsCount = Hospital::count();
-            $patientsCount = Patient::count();
-            $usersCount = User::count();
-            $recentPatients = Patient::with('hospital')
-                ->latest()
-                ->take(5)
-                ->get();
-        } else if ($user->usertype == 2) { // Hospital Operator
-            $hospitalsCount = 1;
-            $patientsCount = Patient::where('hospital_id', $user->hospital_id)->count();
-            $usersCount = User::where('hospital_id', $user->hospital_id)->count();
-            $recentPatients = Patient::with('hospital')
-                ->where('hospital_id', $user->hospital_id)
-                ->latest()
-                ->take(5)
-                ->get();
-        } else { // Ambulance Operator
-            $hospitalsCount = Hospital::count();
-            $patientsCount = 0;
-            $usersCount = 0;
-            $recentPatients = collect();
+        // Default nilai awal untuk semua variabel
+        // All Hospital
+        $hospitalAllCount = Hospital::all()->count();
+        $patientAllCount = Patient::all()->count();
+        $userAllCount = User::all()->count();
+        $hospitalAll = Hospital::all();
+        $patientAll = Patient::all();
+        $userAll = User::all();
+        // $hospitalAllCount = 0;
+        // $patientAllCount = 0;
+        // $userAllCount = 0;
+
+        $hospitalCount = 0;
+        $patientCount = 0;
+        $userCount = 0;
+        $recentPatients = collect(); // Collection kosong untuk pasien terbaru
+        $hospitals = collect(); // Collection kosong untuk rumah sakit
+        $patients = collect(); // Collection kosong untuk semua pasien
+        $users = collect(); // Collection kosong untuk semua pengguna
+
+        // Switch case berdasarkan role pengguna
+        switch ($user->role) {
+            case 1: // Operator System
+                $hospitalCount = Hospital::count();
+                $patientCount = Patient::count();
+                $userCount = User::count();
+                $recentPatients = Patient::with('hospital')
+                    ->latest()
+                    ->take(5)
+                    ->get();
+                $hospitals = Hospital::all(); // Ambil semua data rumah sakit
+                $patients = Patient::all(); // Ambil semua pasien
+                $users = User::all(); // Ambil semua pengguna
+                break;
+            default:
+                abort(403, 'Unauthorized (belom di redirect)'); // Role tidak dikenali
         }
 
+        // Kirim data ke view dashboard
         return view('dashboard', compact(
-            'hospitalsCount',
-            'patientsCount',
-            'usersCount',
-            'recentPatients'
+            'hospitalAllCount',
+            'patientAllCount',
+            'userAllCount',
+
+            'hospitalCount',
+            'patientCount',
+            'userCount',
+            'recentPatients',
+            'hospitals', // Data rumah sakit
+            'patients', // Semua pasien
+            'users' // Semua pengguna
         ));
     }
 }

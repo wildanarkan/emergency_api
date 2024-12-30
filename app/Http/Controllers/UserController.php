@@ -14,10 +14,19 @@ class UserController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->usertype == 2) {
-            $users = User::where('hospital_id', $user->hospital_id)->get();
+        if ($user->role == 2) { // Hospital Admin
+            $hospital = Hospital::where('user_id', $user->id)->first();
+            if ($hospital) {
+                $users = User::whereHas('patients', function ($query) use ($hospital) {
+                    $query->where('hospital_id', $hospital->id);
+                })->get();
+            } else {
+                $users = collect();
+            }
+            $hospitals = collect([$hospital]); // Wrap single hospital in collection
         } else {
-            $users = User::with('hospital')->get();
+            $users = User::all();
+            $hospitals = Hospital::all();
         }
 
         if ($request->expectsJson()) {
@@ -26,13 +35,13 @@ class UserController extends Controller
                 'data' => $users
             ]);
         }
-        return view('users.index', compact('users'));
+        return view('user.index', compact('users', 'hospitals'));
     }
 
     public function create(Request $request)
     {
         $user = null;
-        $hospitals = Hospital::all();
+        $hospital = Hospital::all();
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -40,27 +49,19 @@ class UserController extends Controller
                 'message' => 'Show create form'
             ]);
         }
-        return view('users.form', compact('user', 'hospitals'));
+        return view('user.form', compact('user', 'hospital'));
     }
 
     public function store(Request $request)
     {
         $authUser = auth()->user();
 
-        // Set default values for hospital operators
-        if ($authUser->usertype == 2) {
-            $request->merge([
-                'usertype' => 2,
-                'hospital_id' => $authUser->hospital_id
-            ]);
-        }
-
         $rules = [
-            'username' => 'required|string|unique:users',
-            'email' => 'required|string|email|unique:users',
+            'email' => 'required|string|email|unique:user',
             'password' => 'required|string|min:6',
-            'usertype' => 'required|integer|in:1,2,3',
-            'hospital_id' => 'required_if:usertype,2|exists:hospitals,id|nullable'
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:15',
+            'role' => 'required|string|max:15',
         ];
 
         if ($request->expectsJson()) {
@@ -75,11 +76,14 @@ class UserController extends Controller
         $userData = $request->all();
         $userData['password'] = Hash::make($request->password);
 
-        if ($userData['usertype'] != 2) {
-            $userData['hospital_id'] = null;
-        }
-
-        $user = User::create($userData);
+        $user = User::create([
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'name' => $request->name,
+            'phone' => $request->phone,
+            'role' => 3,
+        ]);
+        
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -87,7 +91,7 @@ class UserController extends Controller
                 'data' => $user
             ], 201);
         }
-        return redirect()->route('users.index')->with('success', 'User created successfully');
+        return redirect()->route('user.index')->with('success', 'User created successfully');
     }
 
     public function show(Request $request, $id)
@@ -105,7 +109,7 @@ class UserController extends Controller
             return abort(404);
         }
 
-        if ($authUser->usertype == 2 && $authUser->hospital_id != $user->hospital_id) {
+        if ($authUser->role == 2 && $authUser->user_id != $user->user_id) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -121,35 +125,10 @@ class UserController extends Controller
                 'data' => $user
             ]);
         }
-        return view('users.show', compact('user'));
+        return view('user.show', compact('user'));
     }
 
-    public function edit(Request $request, User $user)
-    {
-        $authUser = auth()->user();
-
-        if ($authUser->usertype == 2 && $authUser->hospital_id != $user->hospital_id) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized'
-                ], 403);
-            }
-            return abort(403);
-        }
-
-        $hospitals = Hospital::all();
-
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'data' => $user
-            ]);
-        }
-        return view('users.form', compact('user', 'hospitals'));
-    }
-
-    public function update(Request $request, $id)
+    public function edit(Request $request, $id)
     {
         $authUser = auth()->user();
         $user = User::find($id);
@@ -164,7 +143,7 @@ class UserController extends Controller
             return abort(404);
         }
 
-        if ($authUser->usertype == 2 && $authUser->hospital_id != $user->hospital_id) {
+        if ($authUser->role == 2 && $authUser->user_id != $user->user_id) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -174,33 +153,7 @@ class UserController extends Controller
             return abort(403);
         }
 
-        $rules = [
-            'username' => 'required|string|unique:users,username,' . $id,
-            'email' => 'required|string|email|unique:users,email,' . $id,
-            'password' => 'nullable|string|min:6',
-            'usertype' => 'required|integer|in:1,2,3',
-            'hospital_id' => 'required_if:usertype,2|exists:hospitals,id|nullable'
-        ];
-
-        if ($request->expectsJson()) {
-            $validator = Validator::make($request->all(), $rules);
-            if ($validator->fails()) {
-                return response()->json($validator->errors(), 422);
-            }
-        } else {
-            $request->validate($rules);
-        }
-
-        $userData = $request->except('password');
-        if ($request->filled('password')) {
-            $userData['password'] = Hash::make($request->password);
-        }
-
-        if ($userData['usertype'] != 2) {
-            $userData['hospital_id'] = null;
-        }
-
-        $user->update($userData);
+        $hospital = Hospital::all();
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -208,7 +161,45 @@ class UserController extends Controller
                 'data' => $user
             ]);
         }
-        return redirect()->route('users.index')->with('success', 'User updated successfully');
+        return view('user.form', compact('user', 'hospital'));
+    }
+
+
+    public function update(Request $request, $id)
+    {
+        $authUser = auth()->user();
+        $user = User::findOrFail($id);
+
+        // Validasi input
+        $rules = [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:user,email,' . $id,
+            'phone' => 'nullable|string|max:15',
+            'password' => 'nullable|string|min:6',
+        ];
+
+        // Tambahkan validasi role hanya untuk System Admin
+        if ($authUser->role == 1) {
+            $rules['role'] = 'required|integer|in:1,2,3';
+            $rules['user_id'] = 'nullable|exists:hospital,admin_id';
+        } else {
+            $request->merge(['role' => $user->role]); // Tetapkan role saat ini
+            $request->merge(['user_id' => $user->user_id]); // Tetapkan hospital saat ini
+        }
+
+        $validatedData = $request->validate($rules);
+
+        // Update data pengguna
+        $userData = $request->except('password');
+
+        // Perbarui password jika diisi
+        if ($request->filled('password')) {
+            $userData['password'] = Hash::make($request->password);
+        }
+
+        $user->update($userData);
+
+        return redirect()->route('user.index')->with('success', 'User updated successfully!');
     }
 
     public function destroy(Request $request, $id)
@@ -226,7 +217,7 @@ class UserController extends Controller
             return abort(404);
         }
 
-        if ($authUser->usertype == 2 && $authUser->hospital_id != $user->hospital_id) {
+        if ($authUser->role == 2 && $authUser->user_id != $user->user_id) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -244,6 +235,6 @@ class UserController extends Controller
                 'message' => 'User deleted successfully'
             ]);
         }
-        return redirect()->route('users.index')->with('success', 'User deleted successfully');
+        return redirect()->route('user.index')->with('success', 'User deleted successfully');
     }
 }

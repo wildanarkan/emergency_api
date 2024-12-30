@@ -15,9 +15,9 @@ Route::middleware('auth:sanctum', EnsureFrontendRequestsAreStateful::class)->gro
     Route::post('logout', [AuthController::class, 'logout']);
     
     // Hospitals routes
-    Route::get('hospitals/users', [HospitalController::class, 'showUsers']);
-    Route::apiResource('hospitals', HospitalController::class);
+    Route::get('hospital/user', [HospitalController::class, 'showUsers']);
+    Route::apiResource('hospital', HospitalController::class);
     
     // Patients routes
-    Route::apiResource('patients', PatientController::class);
+    Route::apiResource('patient', PatientController::class);
 });

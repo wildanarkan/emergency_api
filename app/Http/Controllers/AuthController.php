@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helper\ResponseFormatter;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,35 +15,42 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'username' => 'required|string|unique:users',
-            'email' => 'required|string|email|unique:users',
+            'name' => 'required|string',
+            'email' => 'required|string|email|unique:user',
             'password' => 'required|string|min:6',
-            'usertype' => 'required|integer|in:1,2,3',
-            'hospital_id' => 'required_if:usertype,2|exists:hospitals,id|nullable'
+            'role' => 'required|integer|in:1,2,3',
+            'hospital_admin_id' => 'required_if:role,2|exists:hospital,id|nullable'
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            if ($request->expectsJson()) {
+                return ResponseFormatter::error('Validation failed', $validator->errors(), 422);
+            }
+            return back()->withErrors($validator)->withInput();
         }
 
         $user = User::create([
-            'username' => $request->username,
+            'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'usertype' => $request->usertype,
-            'hospital_id' => $request->hospital_id,
+            'role' => $request->role,
+            'phone' => $request->phone ?? '',
+            'hospital_admin_id' => $request->hospital_admin_id,
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
-            'message' => 'Registration successful',
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'user' => $user,
-        ], 201);
-    }
+        if ($request->expectsJson()) {
+            return ResponseFormatter::success('Registration successful', [
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'user' => $user,
+            ], 201);
+        }
 
+        return redirect()->route('login')
+            ->with('success', 'Registration successful! Please login.');
+    }
 
     // Login method
     public function login(Request $request)
@@ -54,35 +62,44 @@ class AuthController extends Controller
 
         if ($validator->fails()) {
             if ($request->expectsJson()) {
-                return response()->json($validator->errors(), 422);
-            } else {
-                return back()->withErrors($validator)->withInput();
+                return ResponseFormatter::error('Validation failed', $validator->errors(), 422);
             }
+            return back()->withErrors($validator)->withInput();
         }
 
         if (!Auth::attempt($request->only('email', 'password'))) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Unauthorized'], 401);
-            } else {
-                return back()->withErrors(['email' => 'The provided credentials do not match our records.'])->withInput();
+                return ResponseFormatter::error('Unauthorized', null, 401);
             }
+            return back()
+                ->withErrors(['email' => 'The provided credentials do not match our records.'])
+                ->withInput();
         }
 
         $user = User::where('email', $request->email)->firstOrFail();
+
+        if ($user->role == 3) {
+            if ($request->expectsJson()) {
+                return ResponseFormatter::error('Nurse cannot login', null, 403);
+            }
+            return back()
+                ->withErrors(['role' => 'Nurses are not allowed to login through this interface.'])
+                ->withInput();
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         if ($request->expectsJson()) {
-            return response()->json([
-                'message' => 'Login success',
+            return ResponseFormatter::success('Login successful', [
                 'access_token' => $token,
                 'token_type' => 'Bearer',
                 'user' => $user,
             ]);
-        } else {
-            return redirect()->intended(route('dashboard'))->with('message', 'Login successful');
         }
-    }
 
+        return redirect()->intended(route('dashboard'))
+            ->with('success', 'Login successful!');
+    }
 
     // Logout method
     public function logout(Request $request)
@@ -98,11 +115,10 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         if ($request->expectsJson()) {
-            return response()->json([
-                'message' => 'Successfully logged out'
-            ]);
-        } else {
-            return redirect()->route('login')->with('message', 'Successfully logged out');
+            return ResponseFormatter::success('Successfully logged out');
         }
+
+        return redirect()->route('login')
+            ->with('success', 'Successfully logged out!');
     }
 }

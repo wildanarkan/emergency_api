@@ -20,58 +20,51 @@
         <!-- Sidebar -->
         <nav id="sidebar" class="bg-dark text-white">
             <div class="sidebar-header p-3">
-                <h3>{{ Auth::user()->username }}</h3>
+                <h3>{{ Auth::user()->name }}</h3>
                 <h6>
-                    @switch( Auth::user()->usertype)
+                    @switch(Auth::user()->role)
                         @case(1)
-                            Ambulance Operator
+                            System Admin
                         @break
 
                         @case(2)
-                            Hospital Operator
+                            Hospital Admin
                         @break
 
                         @case(3)
-                            Operator System
+                            Nurse
                         @break
                     @endswitch
                 </h6>
             </div>
 
-            <ul class="list-unstyled components p-3">
-                <li class="{{ Request::is('dashboard') ? 'active' : '' }}">
+            <ul class="list-unstyled components">
+                @if (auth()->user()->role == 1)
                     <a href="{{ route('dashboard') }}" class="text-white text-decoration-none">
-                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                        <li class="px-2 {{ Request::is('dashboard') || Request::is('/') ? 'active' : '' }}">
+                            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                        </li>
                     </a>
-                </li>
 
-                {{-- @if (auth()->user()->usertype == 3) --}}
-                <li class="{{ Request::is('hospitals*') ? 'active' : '' }}">
-                    <a href="{{ route('hospitals.index') }}" class="text-white text-decoration-none">
-                        <i class="fas fa-hospital me-2"></i> Hospitals
+                    <a href="{{ route('hospital.index') }}" class="text-white text-decoration-none">
+                        <li class="px-2 {{ Request::is('hospital*') ? 'active' : '' }}">
+                            <i class="fas fa-hospital me-2"></i> Hospitals
+                        </li>
                     </a>
-                </li>
-                {{-- @endif --}}
 
-                <li class="{{ Request::is('patients*') ? 'active' : '' }}">
-                    <a href="{{ route('patients.index') }}" class="text-white text-decoration-none">
-                        <i class="fas fa-users me-2"></i> Patients
+                    <a href="{{ route('user.index') }}" class="text-white text-decoration-none">
+                        <li class="px-2 {{ Request::is('user*') ? 'active' : '' }}">
+                            <i class="fas fa-user-md me-2"></i> Users
+                        </li>
                     </a>
-                </li>
+                @endif
 
-                <li class="{{ Request::is('users*') ? 'active' : '' }}">
-                    <a href="{{ route('users.index') }}" class="text-white text-decoration-none">
-                        <i class="fas fa-user me-2"></i> Users
-                    </a>
-                </li>
-
-                {{-- @if (auth()->user()->usertype == 3)
-                    <li class="{{ Request::is('users*') ? 'active' : '' }}">
-                        <a href="{{ route('users.index') }}" class="text-white text-decoration-none">
-                            <i class="fas fa-user-cog me-2"></i> Users
-                        </a>
+                <a href="{{ route('patient.index') }}" class="text-white text-decoration-none">
+                    <li class="px-2 {{ Request::is('patient*') ? 'active' : '' }}">
+                        <i class="fas fa-user me-2"></i> Patients
                     </li>
-                @endif --}}
+                </a>
+
             </ul>
         </nav>
 
@@ -87,7 +80,7 @@
                     <div class="dropdown ms-auto">
                         <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton"
                             data-bs-toggle="dropdown">
-                            {{ Auth::user()->username }}
+                            {{ Auth::user()->name }}
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             {{-- <li><a class="dropdown-item" href="{{ route('profile') }}">Profile</a></li> --}}

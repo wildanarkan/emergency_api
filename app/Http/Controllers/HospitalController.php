@@ -6,6 +6,8 @@ use App\Models\Hospital;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class HospitalController extends Controller
 {
@@ -13,24 +15,24 @@ class HospitalController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->usertype == 2) { // Operator Hospital
-            $hospitals = Hospital::where('id', $user->hospital_id)->get();
+        if ($user->role == 2) { // Hospital Admin
+            $hospital = Hospital::where('user_id', $user->id)->get();
         } else {
-            $hospitals = Hospital::all();
+            $hospital = Hospital::all();
         }
 
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'data' => $hospitals
+                'data' => $hospital
             ]);
         }
-        return view('hospitals.index', compact('hospitals'));
+        return view('hospital.index', compact('hospital'));
     }
 
     public function create(Request $request)
     {
-        $hospital = null; // Set to null for create form
+        $hospital = null;
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -38,40 +40,73 @@ class HospitalController extends Controller
                 'message' => 'Show create form'
             ]);
         }
-        return view('hospitals.form', compact('hospital'));
+        return view('hospital.form', compact('hospital'));
     }
-
 
     public function store(Request $request)
     {
         $rules = [
             'name' => 'required|string|max:255',
+            'phone' => 'required|string',
             'address' => 'required|string',
-            'phone' => 'nullable|string|max:15'
+            'admin_name' => 'required|string|max:255',
+            'admin_email' => 'required|email|unique:user,email',
+            'admin_phone' => 'required|string',
+            'admin_password' => 'required|min:6'
         ];
 
-        if ($request->expectsJson()) {
-            $validator = Validator::make($request->all(), $rules);
-            if ($validator->fails()) {
-                return response()->json($validator->errors(), 422);
-            }
+        $validator = Validator::make($request->all(), $rules);
 
-            $hospital = Hospital::create($request->all());
-            return response()->json([
-                'success' => true,
-                'data' => $hospital
-            ], 201);
+        if ($request->expectsJson() && $validator->fails()) {
+            return response()->json($validator->errors(), 422);
         }
 
-        $request->validate($rules);
-        Hospital::create($request->all());
-        return redirect()->route('hospitals.index')->with('success', 'Hospital created successfully');
+        DB::beginTransaction();
+        try {
+            // Create admin user
+            $admin = User::create([
+                'name' => $request->admin_name,
+                'email' => $request->admin_email,
+                'phone' => $request->admin_phone,
+                'password' => Hash::make($request->admin_password),
+                'role' => 2 // hospital admin role
+            ]);
+
+            // Create hospital
+            $hospital = Hospital::create([
+                'name' => $request->name,
+                'phone' => $request->phone,
+                'address' => $request->address,
+                'user_id' => $admin->id
+            ]);
+
+            DB::commit();
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $hospital
+                ], 201);
+            }
+
+            return redirect()->route('hospital.index')->with('success', 'Hospital created successfully');
+        } catch (\Exception $e) {
+            DB::rollback();
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create hospital. ' . $e->getMessage()
+                ], 500);
+            }
+            return back()->with('error', 'Failed to create hospital. ' . $e->getMessage());
+        }
     }
+
 
     public function show(Request $request, $id)
     {
         $user = auth()->user();
-        $hospital = Hospital::find($id);
+        $hospital = Hospital::with('admin')->find($id);
 
         if (!$hospital) {
             if ($request->expectsJson()) {
@@ -83,7 +118,7 @@ class HospitalController extends Controller
             return abort(404);
         }
 
-        if ($user->usertype == 2 && $user->hospital_id != $id) {
+        if ($user->role == 2 && $user->user_id != $id) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -99,18 +134,19 @@ class HospitalController extends Controller
                 'data' => $hospital
             ]);
         }
-        return view('hospitals.show', compact('hospital'));
+        return view('hospital.show', compact('hospital'));
     }
 
     public function edit(Hospital $hospital)
     {
-        return view('hospitals.form', compact('hospital'));
+        $hospital->load('admin');
+        return view('hospital.form', compact('hospital'));
     }
 
     public function update(Request $request, $id)
     {
         $user = auth()->user();
-        $hospital = Hospital::find($id);
+        $hospital = Hospital::with('admin')->find($id);
 
         if (!$hospital) {
             if ($request->expectsJson()) {
@@ -122,11 +158,11 @@ class HospitalController extends Controller
             return abort(404);
         }
 
-        if ($user->usertype == 2 && $user->hospital_id != $id) {
+        if ($user->role == 2 && $user->user_id != $id) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized'
+                    'message' => 'Unauthorized (cant change someone else hospital)'
                 ], 403);
             }
             return abort(403);
@@ -135,7 +171,7 @@ class HospitalController extends Controller
         $rules = [
             'name' => 'required|string|max:255',
             'address' => 'required|string',
-            'phone' => 'nullable|string|max:15'
+            'phone' => 'required|string',
         ];
 
         if ($request->expectsJson()) {
@@ -144,16 +180,45 @@ class HospitalController extends Controller
                 return response()->json($validator->errors(), 422);
             }
 
-            $hospital->update($request->all());
-            return response()->json([
-                'success' => true,
-                'data' => $hospital
-            ]);
+            DB::beginTransaction();
+            try {
+                $hospital->update([
+                    'name' => $request->name,
+                    'address' => $request->address,
+                    'phone' => $request->phone
+                ]);
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'data' => $hospital
+                ]);
+            } catch (\Exception $e) {
+                DB::rollback();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to update hospital. ' . $e->getMessage()
+                ], 500);
+            }
         }
 
         $request->validate($rules);
-        $hospital->update($request->all());
-        return redirect()->route('hospitals.index')->with('success', 'Hospital updated successfully');
+
+        DB::beginTransaction();
+        try {
+            $hospital->update([
+                'name' => $request->name,
+                'phone' => $request->phone,
+                'address' => $request->address
+            ]);
+
+            DB::commit();
+            return redirect()->route('hospital.index')->with('success', 'Hospital updated successfully');
+        } catch (\Exception $e) {
+            DB::rollback();
+            return back()->with('error', 'Failed to update hospital. ' . $e->getMessage());
+        }
     }
 
     public function destroy(Request $request, $id)
@@ -171,33 +236,54 @@ class HospitalController extends Controller
             return abort(404);
         }
 
-        if ($user->usertype == 2 && $user->hospital_id != $id) {
+        if ($user->role == 2 && $user->user_id != $id) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized'
+                    'message' => 'Unauthorized (cant delete someone else hospital)'
                 ], 403);
             }
             return abort(403);
         }
 
-        $hospital->delete();
+        DB::beginTransaction();
+        try {
+            // Delete the admin user first
+            $admin = User::find($hospital->admin_id);
+            if ($admin) {
+                $admin->delete();
+            }
 
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Hospital deleted successfully'
-            ]);
+            // Delete the hospital
+            $hospital->delete();
+
+            DB::commit();
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Hospital and admin deleted successfully'
+                ]);
+            }
+            return redirect()->route('hospital.index')->with('success', 'Hospital and admin deleted successfully');
+        } catch (\Exception $e) {
+            DB::rollback();
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to delete hospital. ' . $e->getMessage()
+                ], 500);
+            }
+            return back()->with('error', 'Failed to delete hospital. ' . $e->getMessage());
         }
-        return redirect()->route('hospitals.index')->with('success', 'Hospital deleted successfully');
     }
 
     public function showUsers(Request $request)
     {
         $user = auth()->user();
 
-        if ($user->usertype == 2) {
-            $hospital_id = $user->hospital_id;
+        if ($user->role == 2) {
+            $hospital_id = $user->user_id;
             $hospital = Hospital::find($hospital_id);
             if (!$hospital) {
                 if ($request->expectsJson()) {
@@ -209,16 +295,12 @@ class HospitalController extends Controller
                 return abort(404);
             }
 
-            $users = User::where('hospital_id', $hospital_id)
-                ->select('id', 'username', 'email', 'usertype', 'hospital_id')
+            $users = User::where('user_id', $hospital_id)
+                ->select('id', 'name', 'email', 'role', 'user_id')
                 ->get();
-        }
-        // Jika Operator System, bisa lihat semua
-        else if ($user->usertype == 3) {
+        } else if ($user->role == 1) {
             $users = User::all();
-        }
-        // Untuk operator ambulance atau tipe lain
-        else {
+        } else {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -232,10 +314,10 @@ class HospitalController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'users' => $users
+                    'user' => $users
                 ]
             ]);
         }
-        return view('hospitals.users', compact('users'));
+        return view('hospital.user', compact('users'));
     }
 }

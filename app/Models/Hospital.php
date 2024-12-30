@@ -1,26 +1,34 @@
 <?php
-
+// app/Models/Hospital.php
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Hospital extends Model
 {
-    use HasFactory;
+    protected $table = 'hospital';
 
     protected $fillable = [
         'name',
-        'address',
         'phone',
+        'address',
+        'user_id'
     ];
 
-    public function users()
+    /**
+     * Get the admin user that manages this hospital.
+     */
+    public function admin(): BelongsTo
     {
-        return $this->hasMany(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function patients()
+    /**
+     * Get all patients in this hospital.
+     */
+    public function patients(): HasMany
     {
         return $this->hasMany(Patient::class);
     }
