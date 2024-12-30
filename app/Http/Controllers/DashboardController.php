@@ -47,6 +47,8 @@ class DashboardController extends Controller
                 $patients = Patient::all(); // Ambil semua pasien
                 $users = User::all(); // Ambil semua pengguna
                 break;
+            case 2:
+                return redirect()->route('patient.index');
             default:
                 abort(403, 'Unauthorized (belom di redirect)'); // Role tidak dikenali
         }

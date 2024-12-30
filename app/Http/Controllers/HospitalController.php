@@ -16,7 +16,8 @@ class HospitalController extends Controller
         $user = auth()->user();
 
         if ($user->role == 2) { // Hospital Admin
-            $hospital = Hospital::where('user_id', $user->id)->get();
+            // $hospital = Hospital::where('user_id', $user->id)->get();
+            return redirect()->route('patient.index');
         } else {
             $hospital = Hospital::all();
         }
@@ -39,6 +40,12 @@ class HospitalController extends Controller
                 'success' => true,
                 'message' => 'Show create form'
             ]);
+        }
+
+        if (auth()->user()->role == 2) {
+            // return redirect('patient.index', compact('hospital'));
+            return redirect()->route('patient.index');
+
         }
         return view('hospital.form', compact('hospital'));
     }
