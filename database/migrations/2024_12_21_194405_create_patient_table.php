@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('patient', function (Blueprint $table) {
@@ -23,9 +20,6 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id');
             $table->integer('status')->comment('1:menuju lokasi / 2:rujukan / 3:selesai');
             $table->timestamps();
-
-            $table->foreign('hospital_id')->references('id')->on('hospital')->onDelete('set null');
-            $table->foreign('user_id')->references('id')->on('user')->onDelete('cascade');
         });
     }
 

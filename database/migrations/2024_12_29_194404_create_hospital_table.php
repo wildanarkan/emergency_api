@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('hospital', function (Blueprint $table) {
@@ -18,14 +15,11 @@ return new class extends Migration
             $table->string('address');
             $table->unsignedBigInteger('user_id');
             $table->timestamps();
-    
-            $table->foreign('user_id')->references('id')->on('user')->onDelete('cascade');
         });
     }
-    
+
     public function down(): void
     {
         Schema::dropIfExists('hospital');
     }
-    
 };

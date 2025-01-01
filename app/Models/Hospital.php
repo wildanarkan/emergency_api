@@ -1,5 +1,4 @@
 <?php
-// app/Models/Hospital.php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -17,17 +16,24 @@ class Hospital extends Model
         'user_id'
     ];
 
-    /**
-     * Get the admin user that manages this hospital.
-     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($hospital) {
+            // Delete related user (hospital admin)
+            $hospital->admin()->delete();
+            
+            // Delete related patients
+            $hospital->patients()->delete();
+        });
+    }
+
     public function admin(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    /**
-     * Get all patients in this hospital.
-     */
     public function patients(): HasMany
     {
         return $this->hasMany(Patient::class);
