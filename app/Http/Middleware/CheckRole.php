@@ -12,23 +12,12 @@ class CheckRole
 {
     public function handle(Request $request, Closure $next, ...$roles)
     {
-        if (!auth()->check()) {
-            return redirect('login');
+        if (Auth::check() && Auth::user()->role == 3) {
+            Auth::logout(); // Logout the user
+            return redirect()->route('login')->withErrors([
+                'role' => 'Access denied for nurses.',
+            ]);
         }
-
-        $userRole = auth()->user()->role;
-
-        // Jika role = 2, hanya bisa akses patient.index
-        // if ($userRole == 2) {
-        //     // Izinkan akses ke patient.index
-        //     if ($request->route()->getName() == 'patient.index') {
-        //         return $next($request);
-        //     }
-        //     // Redirect ke patient.index untuk akses lainnya
-        //     return redirect()->route('patient.index');
-        // }
-
-        // Untuk role lainnya, bisa akses semua
         return $next($request);
     }
 }

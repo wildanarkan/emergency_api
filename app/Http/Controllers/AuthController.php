@@ -78,7 +78,9 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->firstOrFail();
 
+        // Check role, and log out if role is not allowed
         if ($user->role == 3) {
+            Auth::logout(); // Logout the user
             if ($request->expectsJson()) {
                 return ResponseFormatter::error('Nurse cannot login', null, 403);
             }
@@ -100,6 +102,7 @@ class AuthController extends Controller
         return redirect()->intended(route('dashboard'))
             ->with('success', 'Login successful!');
     }
+
 
     public function loginApp(Request $request)
     {
