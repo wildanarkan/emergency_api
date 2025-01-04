@@ -56,6 +56,8 @@ class HospitalController extends Controller
             'name' => 'required|string|max:255',
             'phone' => 'required|string',
             'address' => 'required|string',
+            'type' => 'required|string',
+
             'admin_name' => 'required|string|max:255',
             'admin_email' => 'required|email|unique:user,email',
             'admin_phone' => 'required|string',
@@ -84,6 +86,7 @@ class HospitalController extends Controller
                 'name' => $request->name,
                 'phone' => $request->phone,
                 'address' => $request->address,
+                'type' => $request->type,
                 'user_id' => $admin->id
             ]);
 
@@ -179,6 +182,7 @@ class HospitalController extends Controller
             'name' => 'required|string|max:255',
             'address' => 'required|string',
             'phone' => 'required|string',
+            'type' => 'required|string',
         ];
 
         if ($request->expectsJson()) {
@@ -192,7 +196,8 @@ class HospitalController extends Controller
                 $hospital->update([
                     'name' => $request->name,
                     'address' => $request->address,
-                    'phone' => $request->phone
+                    'phone' => $request->phone,
+                    'type' => $request->type
                 ]);
 
                 DB::commit();
@@ -217,7 +222,8 @@ class HospitalController extends Controller
             $hospital->update([
                 'name' => $request->name,
                 'phone' => $request->phone,
-                'address' => $request->address
+                'address' => $request->address,
+                'type' => $request->type
             ]);
 
             DB::commit();

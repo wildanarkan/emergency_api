@@ -13,6 +13,10 @@ return new class extends Migration
             $table->string('name');
             $table->string('phone');
             $table->string('address');
+
+            // kolom baru
+            $table->string('type');
+
             $table->unsignedBigInteger('user_id');
             $table->timestamps();
         });

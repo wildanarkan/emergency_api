@@ -9,6 +9,7 @@ use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 // Public routes
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
+// Route::post('login-app', [AuthController::class, 'loginApp']);
 
 // Protected routes
 Route::middleware('auth:sanctum', EnsureFrontendRequestsAreStateful::class)->group(function () {

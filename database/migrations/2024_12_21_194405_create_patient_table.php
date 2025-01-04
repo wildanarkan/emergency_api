@@ -14,11 +14,21 @@ return new class extends Migration
             $table->integer('age');
             $table->integer('gender')->comment('1:male / 2:female');
             $table->integer('case')->comment('1:non trauma / 2:trauma');
+
+
+            // kolom baru
+            $table->timestamp('time_incident')->useCurrent();
+            $table->text('mechanism');
+            $table->text('injury');
+            $table->text('photo_injury');
+            $table->text('treatment');
+            // --
+            
             $table->string('desc');
             $table->timestamp('arrival')->useCurrent();
             $table->unsignedBigInteger('hospital_id')->nullable()->comment('empty if no hospital care is required');
             $table->unsignedBigInteger('user_id');
-            $table->integer('status')->comment('1:menuju lokasi / 2:rujukan / 3:selesai');
+            $table->integer('status')->comment('1:Menuju RS / 2:Selesai');
             $table->timestamps();
         });
     }

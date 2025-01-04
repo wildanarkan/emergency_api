@@ -9,31 +9,40 @@ class Patient extends Model
 {
     protected $table = 'patient';
 
+    /**
+     * Kolom yang dapat diisi (mass assignable).
+     */
     protected $fillable = [
         'name',
         'age',
-        'gender', // 1:male / 2:female
-        'case',   // 1:non trauma / 2:trauma
+        'gender',       // 1:male / 2:female
+        'case',         // 1:non trauma / 2:trauma
+        'time_incident',// Waktu kejadian
+        'mechanism',    // Mekanisme kejadian
+        'injury',       // Detail cedera
+        'photo_injury', // Foto cedera
+        'treatment',    // Pengobatan yang diberikan
         'desc',
         'arrival',
         'hospital_id',
         'user_id',
-        'status'  // 1:menuju lokasi / 2:rujukan / 3:selesai
+        'status'        // 1:Menuju RS / 2:Selesai
     ];
 
     /**
-     * The attributes that should be cast.
+     * Pengaturan casting tipe data.
      */
     protected $casts = [
         'age' => 'integer',
         'gender' => 'integer',
         'case' => 'integer',
         'status' => 'integer',
-        'arrival' => 'datetime'
+        'arrival' => 'datetime',
+        'time_incident' => 'datetime' // Tambahan kolom baru
     ];
 
     /**
-     * Get the hospital associated with this patient.
+     * Relasi ke tabel hospital.
      */
     public function hospital(): BelongsTo
     {
@@ -41,7 +50,7 @@ class Patient extends Model
     }
 
     /**
-     * Get the user who created this patient record.
+     * Relasi ke tabel user.
      */
     public function user(): BelongsTo
     {
@@ -49,7 +58,7 @@ class Patient extends Model
     }
 
     /**
-     * Get the gender as text
+     * Aksesor untuk gender sebagai teks.
      */
     public function getGenderTextAttribute(): string
     {
@@ -57,7 +66,7 @@ class Patient extends Model
     }
 
     /**
-     * Get the case type as text
+     * Aksesor untuk tipe kasus sebagai teks.
      */
     public function getCaseTextAttribute(): string
     {
@@ -65,19 +74,33 @@ class Patient extends Model
     }
 
     /**
-     * Get the status as text
+     * Aksesor untuk status sebagai teks.
      */
     public function getStatusTextAttribute(): string
     {
         switch ($this->status) {
             case 1:
-                return 'Menuju Lokasi';
+                return 'Menuju RS';
             case 2:
-                return 'Rujukan';
-            case 3:
                 return 'Selesai';
             default:
                 return 'Unknown';
         }
+    }
+
+    /**
+     * Aksesor untuk menampilkan waktu kejadian dalam format yang mudah dibaca.
+     */
+    public function getFormattedTimeIncidentAttribute(): string
+    {
+        return $this->time_incident ? $this->time_incident->format('d-m-Y H:i:s') : '-';
+    }
+
+    /**
+     * Aksesor untuk memeriksa apakah ada foto cedera.
+     */
+    public function getHasPhotoInjuryAttribute(): bool
+    {
+        return !empty($this->photo_injury);
     }
 }

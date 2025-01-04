@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Patient;
 use App\Models\Hospital;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class PatientController extends Controller
@@ -13,11 +15,9 @@ class PatientController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->role == 2) { // Hospital Admin
+        if ($user->role == 2) {
             $hospital = Hospital::where('user_id', $user->id)->first();
-
-            // Filter patient berdasarkan hospital_id
-            $patient = Patient::where('hospital_id', $hospital->id)->get();
+            $patient = Patient::where('hospital_id', $hospital->id)->orderBy('status', 'ASC')->orderBy('arrival', 'ASC')->get();
         } else {
             $patient = Patient::all();
         }
@@ -55,10 +55,38 @@ class PatientController extends Controller
             'desc' => 'required|string',
             'arrival' => 'required|date',
             'hospital_id' => 'nullable|exists:hospital,id',
-            'status' => 'required|integer|in:1,2,3', // 1:menuju lokasi / 2:rujukan / 3:selesai
+            'status' => 'required|integer|in:1,2,3',
+            'time_incident' => 'required|date',
+            'mechanism' => 'required|string',
+            'injury' => 'required|string',
+            'photo_injury' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Changed to handle image upload
+            'treatment' => 'required|string'
         ];
 
-        $request->merge(['user_id' => auth()->id()]);
+        $user = auth()->user();
+        $data = $request->all();
+
+        // Set user_id
+        $data['user_id'] = $user->id;
+
+        // Format dates
+        $data['time_incident'] = date('Y-m-d H:i:s', strtotime($request->time_incident));
+
+        // Handle hospital_id for role 2
+        if ($user->role == 2) {
+            $hospital = Hospital::where('user_id', $user->id)->first();
+            if ($hospital) {
+                $data['hospital_id'] = $hospital->id;
+            }
+        }
+
+        // Handle file upload
+        if ($request->hasFile('photo_injury')) {
+            $file = $request->file('photo_injury');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs('public/injuries', $filename);
+            $data['photo_injury'] = 'storage/injuries/' . $filename;
+        }
 
         if ($request->expectsJson()) {
             $validator = Validator::make($request->all(), $rules);
@@ -66,18 +94,7 @@ class PatientController extends Controller
                 return response()->json($validator->errors(), 422);
             }
 
-            $user = auth()->user();
-            if ($user->role == 2) {
-                $hospital = Hospital::where('user_id', $user->id)->first();
-                if ($request->filled('hospital_id') && $hospital && $hospital->id != $request->hospital_id) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Unauthorized: Cannot create patient for another hospital',
-                    ], 403);
-                }
-            }
-
-            $patient = Patient::create($request->all());
+            $patient = Patient::create($data);
             return response()->json([
                 'success' => true,
                 'data' => $patient,
@@ -85,14 +102,14 @@ class PatientController extends Controller
         }
 
         $request->validate($rules);
-        Patient::create($request->all());
+        Patient::create($data);
         return redirect()->route('patient.index')->with('success', 'Patient created successfully');
     }
 
     public function show(Request $request, $id)
     {
         $user = auth()->user();
-        $patient = Patient::find($id);
+        $patient = Patient::with(['hospital', 'user'])->find($id);
 
         if (!$patient) {
             if ($request->expectsJson()) {
@@ -150,32 +167,6 @@ class PatientController extends Controller
 
     public function update(Request $request, $id)
     {
-        $user = auth()->user();
-        $patient = Patient::find($id);
-
-        // 1. Check if patient exists
-        if (!$patient) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Patient not found'
-                ], 404);
-            }
-            return abort(404);
-        }
-
-        // 2. Authorization check for role 2
-        if ($user->role == 2 && $user->user_id != $patient->hospital_id) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized'
-                ], 403);
-            }
-            return abort(403);
-        }
-
-        // 3. Validation rules
         $rules = [
             'name' => 'required|string|max:255',
             'age' => 'required|integer',
@@ -184,44 +175,71 @@ class PatientController extends Controller
             'desc' => 'required|string',
             'arrival' => 'required|date',
             'hospital_id' => 'nullable|exists:hospital,id',
-            'status' => 'required|integer'
+            'status' => 'required|integer|in:1,2,3',
+            'time_incident' => 'required|date',
+            'mechanism' => 'required|string',
+            'injury' => 'required|string',
+            'photo_injury' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'treatment' => 'required|string'
         ];
-
-        // 4. Handle JSON request
+    
+        $patient = Patient::findOrFail($id);
+        $user = auth()->user();
+        $data = $request->all();
+    
+        // Set user_id
+        $data['user_id'] = $user->id;
+    
+        // Format dates
+        $data['time_incident'] = date('Y-m-d H:i:s', strtotime($request->time_incident));
+    
+        // Handle hospital_id for role 2
+        if ($user->role == 2) {
+            $hospital = Hospital::where('user_id', $user->id)->first();
+            if ($hospital) {
+                $data['hospital_id'] = $hospital->id;
+            }
+        }
+    
+        // Handle file upload
+        if ($request->hasFile('photo_injury')) {
+            $file = $request->file('photo_injury');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs('public/injuries', $filename);
+            $data['photo_injury'] = 'storage/injuries/' . $filename;
+    
+            // Delete old photo if exists
+            if ($patient->photo_injury && file_exists(public_path($patient->photo_injury))) {
+                unlink(public_path($patient->photo_injury));
+            }
+        }
+    
         if ($request->expectsJson()) {
             $validator = Validator::make($request->all(), $rules);
             if ($validator->fails()) {
                 return response()->json($validator->errors(), 422);
             }
-
-            // Update arrival time to correct format
-            $request->merge(['arrival' => date('Y-m-d H:i:s', strtotime($request->arrival))]);
-
-            // Update patient
-            $patient->update($request->all());
+    
+            $patient->update($data);
             return response()->json([
                 'success' => true,
-                'data' => $patient
-            ]);
+                'data' => $patient,
+            ], 200);
         }
-
-        // 5. Handle form request
-        $validatedData = $request->validate($rules);
-
-        // Update arrival time to correct format
-        $validatedData['arrival'] = date('Y-m-d H:i:s', strtotime($validatedData['arrival']));
-
-        // Update patient
-        $patient->update($validatedData);
-
+    
+        $request->validate($rules);
+        $patient->update($data);
+    
         return redirect()->route('patient.index')->with('success', 'Patient updated successfully');
-    }
+    }    
+
 
     public function destroy(Request $request, $id)
     {
         $user = auth()->user();
         $patient = Patient::find($id);
 
+        // Cek apakah pasien ditemukan
         if (!$patient) {
             if ($request->expectsJson()) {
                 return response()->json([
@@ -232,31 +250,47 @@ class PatientController extends Controller
             return abort(404);
         }
 
-        if ($user->role == 2 && $user->user_id != $patient->hospital_id) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized'
-                ], 403);
+        // Cek apakah user memiliki izin untuk menghapus data
+        // if ($user->role == 2 && $user->user_id != $patient->hospital_id) {
+        //     if ($request->expectsJson()) {
+        //         return response()->json([
+        //             'success' => false,
+        //             'message' => 'Unauthorized (tidak ada izin)'
+        //         ], 403);
+        //     }
+        //     return abort(403);
+        // }
+
+        // Hapus file foto jika ada
+        if ($patient->photo_injury) {
+            $filePath = storage_path('app/public/injuries/' . basename($patient->photo_injury));
+            if (file_exists($filePath)) {
+                unlink($filePath); // Hapus file
+            } else {
+                Log::error('File not found: ' . $filePath); // Debugging jika file tidak ditemukan
             }
-            return abort(403);
         }
 
+        // Hapus data pasien
         $patient->delete();
 
+        // Response untuk JSON
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Patient deleted successfully'
             ]);
         }
+
+        // Redirect untuk request biasa
         return redirect()->route('patient.index')->with('success', 'Patient deleted successfully');
     }
+
 
     public function updateStatus($id)
     {
         $patient = Patient::findOrFail($id);
-        $patient->status = 3; // Ubah status menjadi 3 (Selesai)
+        $patient->status = 2;
         $patient->save();
 
         return redirect()->route('patient.index')->with('success', 'Status pasien berhasil diperbarui.');

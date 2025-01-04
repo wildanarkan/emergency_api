@@ -13,6 +13,7 @@ class Hospital extends Model
         'name',
         'phone',
         'address',
+        'type',
         'user_id'
     ];
 

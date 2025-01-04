@@ -101,18 +101,69 @@ class AuthController extends Controller
             ->with('success', 'Login successful!');
     }
 
+    public function loginApp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return ResponseFormatter::error('Validation failed', $validator->errors(), 422);
+            }
+            return back()->withErrors($validator)->withInput();
+        }
+
+        if (!Auth::attempt($request->only('email', 'password'))) {
+            if ($request->expectsJson()) {
+                return ResponseFormatter::error('Unauthorized', null, 401);
+            }
+            return back()
+                ->withErrors(['email' => 'The provided credentials do not match our records.'])
+                ->withInput();
+        }
+
+        $user = User::where('email', $request->email)->firstOrFail();
+
+        if ($user->role == 1 || $user->role == 2) {
+            if ($request->expectsJson()) {
+                return ResponseFormatter::error('User cannot login', null, 403);
+            }
+            return back()
+                ->withErrors(['role' => 'Users are not allowed to login through this interface.'])
+                ->withInput();
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        if ($request->expectsJson()) {
+            return ResponseFormatter::success('Login successful', [
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'user' => $user,
+            ]);
+        }
+
+        return redirect()->intended(route('dashboard'))
+            ->with('success', 'Login successful!');
+    }
+
     // Logout method
     public function logout(Request $request)
     {
+        $user = request()->user();
+
+        $user->tokens()->delete();
         // Revoke all tokens for the authenticated user
         $request->user()->tokens()->delete();
 
         // For web sessions, logout using Auth facade
         Auth::guard('web')->logout();
 
-        // Clear the session
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        // // Clear the session
+        // $request->session()->invalidate();
+        // $request->session()->regenerateToken();
 
         if ($request->expectsJson()) {
             return ResponseFormatter::success('Successfully logged out');

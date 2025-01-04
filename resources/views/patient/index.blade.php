@@ -1,4 +1,3 @@
-{{-- patient/index.blade.php --}}
 @extends('app')
 
 @section('title', 'Patients')
@@ -18,14 +17,20 @@
                                 <th>Age</th>
                                 <th>Gender</th>
                                 <th>Case Type</th>
-                                <th>Description</th>
+                                <th>Time Incident</th>
+                                <th>Mechanism</th>
+                                <th>Injury</th>
+                                <th>Photo</th>
+                                <th>Treatment</th>
+                                <th style="max-width: 400px; text-overflow: ellipsis; overflow: hidden;">Description</th>
                                 <th>Arrival</th>
-                                <th>Hospital</th>
+                                @if (auth()->user()->role != 2)
+                                    <th>Hospital</th>
+                                @endif
                                 <th>Status</th>
                                 @if (auth()->user()->role == 2)
                                     <th>Actions</th>
                                 @endif
-
                             </tr>
                         </thead>
                         <tbody>
@@ -35,32 +40,62 @@
                                     <td>{{ $patient->age }}</td>
                                     <td>{{ $patient->gender == 1 ? 'Male' : 'Female' }}</td>
                                     <td>{{ $patient->case == 1 ? 'Non Trauma' : 'Trauma' }}</td>
-                                    <td>{{ $patient->desc }}</td>
-                                    <td>{{ $patient->arrival }}</td>
-                                    <td>{{ $patient->hospital->name ?? '-' }}</td>
-                                    <td> {{ $patient->status == 1 ? 'Menuju lokasi' : ($patient->status == 2 ? 'Rujukan' : 'Selesai') }}
-                                    </td>
+                                    <td>{{ \Carbon\Carbon::parse($patient->time_incident)->format('d M Y : H:i') }}</td>
+                                    <td>{{ $patient->mechanism }}</td>
+                                    <td>{{ $patient->injury }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                                            data-bs-target="#photoModal"
+                                            data-photo="{{ asset($patient->photo_injury) }}">
+                                            Lihat
+                                        </button>
 
+                                    </td>
+                                    <td>{{ $patient->treatment }}</td>
+                                    <td style="max-width: 400px; text-overflow: ellipsis; overflow: hidden;">{{ $patient->desc }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($patient->arrival)->format('d M Y : H:i') }}</td>
+                                    @if (auth()->user()->role != 2)
+                                        <td>{{ $patient->hospital->name ?? '-' }}</td>
+                                    @endif
+                                    <td>
+                                        {{ $patient->status == 1 ? 'Menuju RS' : 'Selesai' }}
+                                    </td>
                                     @if (auth()->user()->role == 2)
                                         <td>
-                                            {{-- Tombol Update Status --}}
                                             <form action="{{ route('patient.updateStatus', $patient->id) }}" method="POST"
                                                 style="display:inline;">
                                                 @csrf
                                                 @method('PUT')
                                                 <button type="submit" class="btn btn-success btn-sm"
+                                                    @disabled($patient->status != 1)
                                                     onclick="return confirm('Apakah Anda yakin ingin mengubah status pasien ini menjadi Selesai?')">
-                                                    Selesai
+                                                    Terima
                                                 </button>
                                             </form>
                                         </td>
                                     @endif
-
-
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="photoModal" tabindex="-1" role="dialog" aria-labelledby="photoModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="photoModalLabel">Photo of Injury</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="photoModalImage" src="" alt="Photo of Injury" class="img-fluid">
                 </div>
             </div>
         </div>

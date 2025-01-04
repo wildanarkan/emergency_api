@@ -44,6 +44,19 @@
                 @enderror
             </div>
 
+            {{-- New Type Field --}}
+            <div class="form-group mb-3">
+                <label for="type">Hospital Type</label>
+                <select name="type" id="type" class="form-control @error('type') is-invalid @enderror" required>
+                    <option value="A" {{ old('type', $hospital->type ?? '') == 'A' ? 'selected' : '' }}>A</option>
+                    <option value="B" {{ old('type', $hospital->type ?? '') == 'B' ? 'selected' : '' }}>B</option>
+                    <option value="C" {{ old('type', $hospital->type ?? '') == 'C' ? 'selected' : '' }}>C</option>
+                </select>
+                @error('type')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+
             {{-- Admin Information hanya ditampilkan saat membuat hospital baru --}}
             @if (!$hospital)
                 <h4 class="mt-4 mb-3">Admin Hospital</h4>

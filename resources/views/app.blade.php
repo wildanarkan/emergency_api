@@ -20,7 +20,12 @@
         <!-- Sidebar -->
         <nav id="sidebar" class="bg-dark text-white">
             <div class="sidebar-header p-3">
-                <h3>{{ Auth::user()->name }}</h3>
+                @if (auth()->user()->role == 2)
+                    <h3>{{ $hospitalName = Auth::user()->hospital->name ?? 'No hospital' }}</h3>
+                    <hr>
+                @endif
+                <h5>{{ Auth::user()->name }}</h5>
+
                 <h6>
                     @switch(Auth::user()->role)
                         @case(1)
@@ -116,6 +121,13 @@
                 $('#sidebar').toggleClass('active');
             });
         });
+
+        $('#photoModal').on('show.bs.modal', function(event) {
+            var button = $(event.relatedTarget); // Tombol yang ditekan
+            var photoUrl = button.data('photo'); // Mengambil data-photo dari tombol
+            var modal = $(this);
+            modal.find('#photoModalImage').attr('src', photoUrl); // Menetapkan URL gambar ke <img> di dalam modal
+        });
     </script>
 
     @stack('scripts')
@@ -142,6 +154,14 @@
     #content {
         width: 100%;
         min-height: 100vh;
+        overflow: scroll;
+        display: block;
+        overflow-x: visible;
+        white-space: nowrap;
+    }
+
+    .table-responsive {
+       
     }
 
     .sidebar-header {

@@ -36,6 +36,7 @@ class DashboardController extends Controller
         // Switch case berdasarkan role pengguna
         switch ($user->role) {
             case 1: // Operator System
+
                 $hospitalCount = Hospital::count();
                 $patientCount = Patient::count();
                 $userCount = User::count();
