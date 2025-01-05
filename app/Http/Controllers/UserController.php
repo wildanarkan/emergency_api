@@ -15,15 +15,16 @@ class UserController extends Controller
         $user = auth()->user();
 
         if ($user->role == 2) { // Hospital Admin
-            $hospital = Hospital::where('user_id', $user->id)->first();
-            if ($hospital) {
-                $users = User::whereHas('patients', function ($query) use ($hospital) {
-                    $query->where('hospital_id', $hospital->id);
-                })->get();
-            } else {
-                $users = collect();
-            }
-            $hospitals = collect([$hospital]); // Wrap single hospital in collection
+            // $hospital = Hospital::where('user_id', $user->id)->first();
+            // if ($hospital) {
+            //     $users = User::whereHas('patients', function ($query) use ($hospital) {
+            //         $query->where('hospital_id', $hospital->id);
+            //     })->get();
+            // } else {
+            //     $users = collect();
+            // }
+            // $hospitals = collect([$hospital]); // Wrap single hospital in collection
+            return redirect()->route('patient.index');
         } else {
             $users = User::all();
             $hospitals = Hospital::all();
@@ -40,8 +41,16 @@ class UserController extends Controller
 
     public function create(Request $request)
     {
-        $user = null;
+        // $user = null;
         $hospital = Hospital::all();
+        
+        $user = auth()->user();
+        if ($user->role == 2) { // Hospital Admin
+
+            return redirect()->route('patient.index');
+        }else{
+            $user = null;
+        }
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -83,7 +92,7 @@ class UserController extends Controller
             'phone' => $request->phone,
             'role' => 3,
         ]);
-        
+
 
         if ($request->expectsJson()) {
             return response()->json([
