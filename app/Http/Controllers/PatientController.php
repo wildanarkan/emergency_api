@@ -48,19 +48,20 @@ class PatientController extends Controller
     public function store(Request $request)
     {
         $rules = [
-            'name' => 'required|string|max:255',
+            'name' => 'nullable|string|max:255',
             'age' => 'required|integer',
             'gender' => 'required|integer|in:1,2',
             'case' => 'required|integer|in:1,2',
-            'desc' => 'required|string',
-            'arrival' => 'required|date',
-            'hospital_id' => 'nullable|exists:hospital,id',
-            'status' => 'required|integer|in:1,2,3',
             'time_incident' => 'required|date',
             'mechanism' => 'required|string',
             'injury' => 'required|string',
-            'photo_injury' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Changed to handle image upload
-            'treatment' => 'required|string'
+            'photo_injury' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'symptom' => 'required|string',
+            'treatment' => 'required|string',
+            'arrival' => 'required|date',
+            'hospital_id' => 'nullable|exists:hospital,id',
+            'request' => 'required|string',
+            'status' => 'required|integer|in:1,2,3',
         ];
 
         $user = auth()->user();

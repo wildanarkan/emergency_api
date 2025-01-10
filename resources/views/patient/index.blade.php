@@ -21,12 +21,13 @@
                                 <th>Mechanism</th>
                                 <th>Injury</th>
                                 <th>Photo</th>
+                                <th>Symptom</th>
                                 <th>Treatment</th>
-                                <th style="max-width: 400px; text-overflow: ellipsis; overflow: hidden;">Description</th>
                                 <th>Arrival</th>
                                 @if (auth()->user()->role != 2)
                                     <th>Hospital</th>
                                 @endif
+                                <th style="max-width: 400px; text-overflow: ellipsis; overflow: hidden;">Request</th>
                                 <th>Status</th>
                                 @if (auth()->user()->role == 2)
                                     <th>Actions</th>
@@ -36,7 +37,7 @@
                         <tbody>
                             @foreach ($patient as $patient)
                                 <tr>
-                                    <td>{{ $patient->name }}</td>
+                                    <td>{{ $patient->name ?? '-' }}</td>
                                     <td>{{ $patient->age }}</td>
                                     <td>{{ $patient->gender == 1 ? 'Male' : 'Female' }}</td>
                                     <td>{{ $patient->case == 1 ? 'Non Trauma' : 'Trauma' }}</td>
@@ -50,13 +51,14 @@
                                         </button>
 
                                     </td>
+                                    <td>{{ $patient->symptom }}</td>
                                     <td>{{ $patient->treatment }}</td>
-                                    <td style="max-width: 400px; text-overflow: ellipsis; overflow: hidden;">
-                                        {{ $patient->desc }}</td>
                                     <td>{{ \Carbon\Carbon::parse($patient->arrival)->format('d M Y : H:i') }}</td>
                                     @if (auth()->user()->role != 2)
                                         <td>{{ $patient->hospital->name ?? '-' }}</td>
                                     @endif
+                                    <td style="max-width: 400px; text-overflow: ellipsis; overflow: hidden;">
+                                        {{ $patient->request }}</td>
                                     <td>
                                         {{ $patient->status == 1 ? 'Menuju RS' : 'Selesai' }}
                                     </td>

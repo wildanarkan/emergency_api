@@ -15,18 +15,20 @@ class Patient extends Model
     protected $fillable = [
         'name',
         'age',
-        'gender',       // 1:male / 2:female
-        'case',         // 1:non trauma / 2:trauma
-        'time_incident',// Waktu kejadian
-        'mechanism',    // Mekanisme kejadian
-        'injury',       // Detail cedera
-        'photo_injury', // Foto cedera
-        'treatment',    // Pengobatan yang diberikan
+        'gender',    
+        'case',       
+        'time_incident',
+        'mechanism',
+        'injury',
+        'photo_injury',
+        'symptom',
+        'treatment',
         'desc',
         'arrival',
         'hospital_id',
+        'request',
         'user_id',
-        'status'        // 1:Menuju RS / 2:Selesai
+        'status'
     ];
 
     /**
@@ -38,7 +40,7 @@ class Patient extends Model
         'case' => 'integer',
         'status' => 'integer',
         'arrival' => 'datetime',
-        'time_incident' => 'datetime' // Tambahan kolom baru
+        'time_incident' => 'datetime'
     ];
 
     /**
