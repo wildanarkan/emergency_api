@@ -45,14 +45,14 @@
                                     <td>{{ $patient->injury }}</td>
                                     <td>
                                         <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                                            data-bs-target="#photoModal"
-                                            data-photo="{{ asset($patient->photo_injury) }}">
+                                            data-bs-target="#photoModal" data-photo="{{ asset($patient->photo_injury) }}">
                                             Lihat
                                         </button>
 
                                     </td>
                                     <td>{{ $patient->treatment }}</td>
-                                    <td style="max-width: 400px; text-overflow: ellipsis; overflow: hidden;">{{ $patient->desc }}</td>
+                                    <td style="max-width: 400px; text-overflow: ellipsis; overflow: hidden;">
+                                        {{ $patient->desc }}</td>
                                     <td>{{ \Carbon\Carbon::parse($patient->arrival)->format('d M Y : H:i') }}</td>
                                     @if (auth()->user()->role != 2)
                                         <td>{{ $patient->hospital->name ?? '-' }}</td>
@@ -90,12 +90,10 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="photoModalLabel">Photo of Injury</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+                    <button id='closeModal' type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
                 </div>
                 <div class="modal-body text-center">
-                    <img id="photoModalImage" src="" alt="Photo of Injury" class="img-fluid">
+                    <img id="photoModalImage" src="" alt="Photo of Injury" class="modal-image">
                 </div>
             </div>
         </div>

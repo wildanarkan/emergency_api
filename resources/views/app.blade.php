@@ -160,9 +160,7 @@
         white-space: nowrap;
     }
 
-    .table-responsive {
-       
-    }
+    .table-responsive {}
 
     .sidebar-header {
         padding: 20px;
@@ -176,5 +174,12 @@
     .components li.active,
     .components li:hover {
         background: #495057;
+    }
+
+    .modal-image {
+        max-width: 800px;
+        max-height: 400px;
+        width: 100%;
+        object-fit: contain;
     }
 </style>
