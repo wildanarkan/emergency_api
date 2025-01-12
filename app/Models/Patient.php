@@ -23,7 +23,6 @@ class Patient extends Model
         'photo_injury',
         'symptom',
         'treatment',
-        'desc',
         'arrival',
         'hospital_id',
         'request',

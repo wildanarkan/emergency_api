@@ -16,34 +16,36 @@
                                 <th>Name</th>
                                 <th>Age</th>
                                 <th>Gender</th>
-                                <th>Case Type</th>
+                                <th style="min-width: 120px;">Case Type</th>
                                 <th>Time Incident</th>
                                 <th>Mechanism</th>
                                 <th>Injury</th>
                                 <th>Photo</th>
-                                <th>Symptom</th>
+                                <th class="text-center alig" style="min-width: 120px;">Symptom</th>
                                 <th>Treatment</th>
                                 <th>Arrival</th>
                                 @if (auth()->user()->role != 2)
                                     <th>Hospital</th>
                                 @endif
-                                <th style="max-width: 400px; text-overflow: ellipsis; overflow: hidden;">Request</th>
+                                <th>Nurse</th>
+                                <th>Request</th>
                                 <th>Status</th>
-                                @if (auth()->user()->role == 2)
-                                    <th>Actions</th>
-                                @endif
+                                {{-- @if (auth()->user()->role == 2) --}}
+                                <th>Actions</th>
+                                {{-- @endif --}}
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($patient as $patient)
                                 <tr>
                                     <td>{{ $patient->name ?? '-' }}</td>
-                                    <td>{{ $patient->age }}</td>
+                                    <td>{{ $patient->age ?? '-' }}</td>
                                     <td>{{ $patient->gender == 1 ? 'Male' : 'Female' }}</td>
                                     <td>{{ $patient->case == 1 ? 'Non Trauma' : 'Trauma' }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($patient->time_incident)->format('d M Y : H:i') }}</td>
-                                    <td>{{ $patient->mechanism }}</td>
-                                    <td>{{ $patient->injury }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($patient->time_incident)->format('d M Y : H:i') ?? '-' }}
+                                    </td>
+                                    <td>{{ $patient->mechanism ?? '-' }}</td>
+                                    <td>{{ $patient->injury ?? '-' }}</td>
                                     <td>
                                         <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
                                             data-bs-target="#photoModal" data-photo="{{ asset($patient->photo_injury) }}">
@@ -51,31 +53,38 @@
                                         </button>
 
                                     </td>
-                                    <td>{{ $patient->symptom }}</td>
-                                    <td>{{ $patient->treatment }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($patient->arrival)->format('d M Y : H:i') }}</td>
+                                    <td>{{ $patient->symptom ?? '-' }}</td>
+                                    <td>{{ $patient->treatment ?? '-' }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($patient->arrival)->format('d M Y : H:i') ?? '-' }}</td>
                                     @if (auth()->user()->role != 2)
                                         <td>{{ $patient->hospital->name ?? '-' }}</td>
                                     @endif
-                                    <td style="max-width: 400px; text-overflow: ellipsis; overflow: hidden;">
-                                        {{ $patient->request }}</td>
+                                    <td>{{ $patient->user->name ?? '-' }}</td>
+                                    <td>{{ $patient->request ?? '-' }}</td>
                                     <td>
                                         {{ $patient->status == 1 ? 'Menuju RS' : 'Selesai' }}
                                     </td>
-                                    @if (auth()->user()->role == 2)
-                                        <td>
-                                            <form action="{{ route('patient.updateStatus', $patient->id) }}" method="POST"
-                                                style="display:inline;">
-                                                @csrf
-                                                @method('PUT')
-                                                <button type="submit" class="btn btn-success btn-sm"
-                                                    @disabled($patient->status != 1)
-                                                    onclick="return confirm('Apakah Anda yakin ingin mengubah status pasien ini menjadi Selesai?')">
-                                                    Terima
-                                                </button>
-                                            </form>
-                                        </td>
-                                    @endif
+                                    <td>
+                                        <div class="d-flex gap-2 col">
+                                            @if (auth()->user()->role == 2)
+                                                <form action="{{ route('patient.updateStatus', $patient->id) }}"
+                                                    method="POST" style="display:inline;">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <button type="submit" class="btn btn-success btn-sm"
+                                                        @disabled($patient->status != 1)
+                                                        onclick="return confirm('Apakah Anda yakin ingin mengubah status pasien ini menjadi Selesai?')">
+                                                        Terima
+                                                    </button>
+                                                </form>
+                                            @endif
+
+
+                                            <a href="{{ route('patient.pdf', $patient->id) }}" class="btn btn-info btn-sm">
+                                                Download
+                                            </a>
+                                        </div>
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>

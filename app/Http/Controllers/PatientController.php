@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Patient;
 use App\Models\Hospital;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -55,7 +56,7 @@ class PatientController extends Controller
             'time_incident' => 'required|date',
             'mechanism' => 'required|string',
             'injury' => 'required|string',
-            'photo_injury' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'photo_injury' => 'required|image|mimes:jpeg,png,jpg|',
             'symptom' => 'required|string',
             'treatment' => 'required|string',
             'arrival' => 'required|date',
@@ -65,13 +66,17 @@ class PatientController extends Controller
         ];
 
         $user = auth()->user();
+        Log::info('Authenticated user:', ['user_id' => $user->id]);
+
         $data = $request->all();
+        Log::info('Request data received:', $data);
 
         // Set user_id
         $data['user_id'] = $user->id;
 
         // Format dates
         $data['time_incident'] = date('Y-m-d H:i:s', strtotime($request->time_incident));
+        Log::info('Formatted time_incident:', ['time_incident' => $data['time_incident']]);
 
         // Handle hospital_id for role 2
         if ($user->role == 2) {
@@ -79,6 +84,7 @@ class PatientController extends Controller
             if ($hospital) {
                 $data['hospital_id'] = $hospital->id;
             }
+            Log::info('Hospital ID for user:', ['hospital_id' => $data['hospital_id'] ?? 'none']);
         }
 
         // Handle file upload
@@ -87,15 +93,19 @@ class PatientController extends Controller
             $filename = time() . '_' . $file->getClientOriginalName();
             $path = $file->storeAs('public/injuries', $filename);
             $data['photo_injury'] = 'storage/injuries/' . $filename;
+
+            Log::info('File uploaded successfully:', ['path' => $data['photo_injury']]);
         }
 
         if ($request->expectsJson()) {
             $validator = Validator::make($request->all(), $rules);
             if ($validator->fails()) {
+                Log::error('Validation failed:', $validator->errors()->toArray());
                 return response()->json($validator->errors(), 422);
             }
 
             $patient = Patient::create($data);
+            Log::info('Patient created successfully (JSON response):', $patient->toArray());
             return response()->json([
                 'success' => true,
                 'data' => $patient,
@@ -103,9 +113,12 @@ class PatientController extends Controller
         }
 
         $request->validate($rules);
-        Patient::create($data);
+        $patient = Patient::create($data);
+        Log::info('Patient created successfully (Redirect response):', $patient->toArray());
+
         return redirect()->route('patient.index')->with('success', 'Patient created successfully');
     }
+
 
     public function show(Request $request, $id)
     {
@@ -180,20 +193,20 @@ class PatientController extends Controller
             'time_incident' => 'required|date',
             'mechanism' => 'required|string',
             'injury' => 'required|string',
-            'photo_injury' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'photo_injury' => 'nullable|image|mimes:jpeg,png,jpg',
             'treatment' => 'required|string'
         ];
-    
+
         $patient = Patient::findOrFail($id);
         $user = auth()->user();
         $data = $request->all();
-    
+
         // Set user_id
         $data['user_id'] = $user->id;
-    
+
         // Format dates
         $data['time_incident'] = date('Y-m-d H:i:s', strtotime($request->time_incident));
-    
+
         // Handle hospital_id for role 2
         if ($user->role == 2) {
             $hospital = Hospital::where('user_id', $user->id)->first();
@@ -201,38 +214,38 @@ class PatientController extends Controller
                 $data['hospital_id'] = $hospital->id;
             }
         }
-    
+
         // Handle file upload
         if ($request->hasFile('photo_injury')) {
             $file = $request->file('photo_injury');
             $filename = time() . '_' . $file->getClientOriginalName();
             $path = $file->storeAs('public/injuries', $filename);
             $data['photo_injury'] = 'storage/injuries/' . $filename;
-    
+
             // Delete old photo if exists
             if ($patient->photo_injury && file_exists(public_path($patient->photo_injury))) {
                 unlink(public_path($patient->photo_injury));
             }
         }
-    
+
         if ($request->expectsJson()) {
             $validator = Validator::make($request->all(), $rules);
             if ($validator->fails()) {
                 return response()->json($validator->errors(), 422);
             }
-    
+
             $patient->update($data);
             return response()->json([
                 'success' => true,
                 'data' => $patient,
             ], 200);
         }
-    
+
         $request->validate($rules);
         $patient->update($data);
-    
+
         return redirect()->route('patient.index')->with('success', 'Patient updated successfully');
-    }    
+    }
 
 
     public function destroy(Request $request, $id)
@@ -240,7 +253,6 @@ class PatientController extends Controller
         $user = auth()->user();
         $patient = Patient::find($id);
 
-        // Cek apakah pasien ditemukan
         if (!$patient) {
             if ($request->expectsJson()) {
                 return response()->json([
@@ -251,18 +263,6 @@ class PatientController extends Controller
             return abort(404);
         }
 
-        // Cek apakah user memiliki izin untuk menghapus data
-        // if ($user->role == 2 && $user->user_id != $patient->hospital_id) {
-        //     if ($request->expectsJson()) {
-        //         return response()->json([
-        //             'success' => false,
-        //             'message' => 'Unauthorized (tidak ada izin)'
-        //         ], 403);
-        //     }
-        //     return abort(403);
-        // }
-
-        // Hapus file foto jika ada
         if ($patient->photo_injury) {
             $filePath = storage_path('app/public/injuries/' . basename($patient->photo_injury));
             if (file_exists($filePath)) {
@@ -272,10 +272,8 @@ class PatientController extends Controller
             }
         }
 
-        // Hapus data pasien
         $patient->delete();
 
-        // Response untuk JSON
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
@@ -283,7 +281,6 @@ class PatientController extends Controller
             ]);
         }
 
-        // Redirect untuk request biasa
         return redirect()->route('patient.index')->with('success', 'Patient deleted successfully');
     }
 
@@ -295,5 +292,21 @@ class PatientController extends Controller
         $patient->save();
 
         return redirect()->route('patient.index')->with('success', 'Status pasien berhasil diperbarui.');
+    }
+
+    public function downloadPDF($id)
+    {
+        $patient = Patient::findOrFail($id);
+
+        $pdf = Pdf::loadView('patient.pdf', [
+            'patient' => $patient
+        ]);
+
+        $pdf->setPaper('A4', 'portrait');
+
+        // Enable images in PDF
+        $pdf->setOption('enable-local-file-access', true);
+
+        return $pdf->download('patient-' . $patient->name . '.pdf');
     }
 }

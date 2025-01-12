@@ -22,6 +22,7 @@ Route::middleware(['auth', 'check.role'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    Route::get('/patient/{id}/pdf', [PatientController::class, 'downloadPDF'])->name('patient.pdf');
     Route::put('/patient/{id}/status', [PatientController::class, 'updateStatus'])->name('patient.updateStatus');
 
     Route::resource('hospital', HospitalController::class);
