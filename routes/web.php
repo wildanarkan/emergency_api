@@ -6,6 +6,7 @@ use App\Http\Controllers\HospitalController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
+use Illuminate\Support\Facades\Artisan;
 
 // Authentication Routes
 Route::get('login', function () {
@@ -14,9 +15,13 @@ Route::get('login', function () {
 
 Route::post('login', [AuthController::class, 'login']);
 
+Route::get('/foo', function () {
+    Artisan::call('storage:link');
+});
+
 // Protected Routes
 Route::middleware(['auth', 'check.role'])->group(function () {
-    
+
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -28,5 +33,4 @@ Route::middleware(['auth', 'check.role'])->group(function () {
     Route::resource('hospital', HospitalController::class);
     Route::resource('user', UserController::class);
     Route::resource('patient', PatientController::class)->only(['index']);
-
 });

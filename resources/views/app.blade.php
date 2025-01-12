@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emergency - @yield('title')</title>
-
+    <link rel="icon" type="image/png" href="{{ asset('storage/logo_sipongga.png') }}">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -252,17 +252,6 @@
         width: 100%;
         object-fit: contain;
     }
-
- 
-
-    /* #content {
-        width: 100%;
-        min-height: 100vh;
-        overflow: scroll;
-        display: block;
-        overflow-x: visible;
-        white-space: nowrap;
-    } */
 
     /* Responsive Styles */
     @media (max-width: 768px) {

@@ -72,7 +72,7 @@ class AuthController extends Controller
                 return ResponseFormatter::error('Unauthorized', null, 401);
             }
             return back()
-                ->withErrors(['email' => 'The provided credentials do not match our records.'])
+                ->withErrors(['email' => 'Your email or password is incorrect.'])
                 ->withInput();
         }
 
@@ -85,7 +85,7 @@ class AuthController extends Controller
                 return ResponseFormatter::error('Nurse cannot login', null, 403);
             }
             return back()
-                ->withErrors(['role' => 'Nurses are not allowed to login through this interface.'])
+                ->withErrors(['role' => "Nurse can't access admin panel"])
                 ->withInput();
         }
 

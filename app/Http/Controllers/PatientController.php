@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Patient;
 use App\Models\Hospital;
+use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -16,20 +17,46 @@ class PatientController extends Controller
     {
         $user = auth()->user();
 
+        // Ambil daftar rumah sakit dan user untuk dropdown filter
+        $hospitals = Hospital::all();
+        $users = User::where('role', 3)->get();
+
+        // Query awal berdasarkan role
         if ($user->role == 2) {
             $hospital = Hospital::where('user_id', $user->id)->first();
-            $patient = Patient::where('hospital_id', $hospital->id)->orderBy('status', 'ASC')->orderBy('arrival', 'ASC')->get();
+            $query = Patient::where('hospital_id', $hospital->id);
         } else {
-            $patient = Patient::all();
+            $query = Patient::query();
         }
 
+        // Filter berdasarkan hospital_id jika tersedia
+        if ($request->has('hospital_id') && $request->hospital_id != '') {
+            $query->where('hospital_id', $request->hospital_id);
+        }
+
+        // Filter berdasarkan user_id jika tersedia
+        if ($request->has('user_id') && $request->user_id != '') {
+            $query->where('user_id', $request->user_id);
+        }
+
+        // Filter berdasarkan case_type jika tersedia
+        if ($request->has('case_type') && $request->case_type != '') {
+            $query->where('case', $request->case_type); // Pastikan 'case' adalah kolom yang benar
+        }
+
+        // Ambil data pasien sesuai filter
+        $patients = $query->orderBy('status', 'ASC')->orderBy('arrival', 'ASC')->with('hospital', 'user')->get();
+
+        // Jika request JSON, kembalikan sebagai API
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'data' => $patient
+                'data' => $patients
             ]);
         }
-        return view('patient.index', compact('patient'));
+
+        // Kembalikan ke view dengan data yang difilter
+        return view('patient.index', compact('patients', 'hospitals', 'users'));
     }
 
     public function create(Request $request)
