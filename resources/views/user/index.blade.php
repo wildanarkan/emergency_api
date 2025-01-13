@@ -19,7 +19,6 @@
                                 <th>Phone</th>
                                 <th>Role</th>
                                 <th>Hospital</th>
-                                {{-- <th>Actions</th> --}}
                             </tr>
                         </thead>
                         <tbody>

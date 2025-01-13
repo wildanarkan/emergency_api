@@ -44,6 +44,11 @@ class PatientController extends Controller
             $query->where('case', $request->case_type); // Pastikan 'case' adalah kolom yang benar
         }
 
+        // Filter berdasarkan case_type jika tersedia
+        if ($request->has('status') && $request->status != '') {
+            $query->where('status', $request->status); // Pastikan 'case' adalah kolom yang benar
+        }
+
         // Ambil data pasien sesuai filter
         $patients = $query->orderBy('status', 'ASC')->orderBy('arrival', 'ASC')->with('hospital', 'user')->get();
 
@@ -83,7 +88,7 @@ class PatientController extends Controller
             'time_incident' => 'required|date',
             'mechanism' => 'required|string',
             'injury' => 'required|string',
-            'photo_injury' => 'required|image|mimes:jpeg,png,jpg|',
+            'photo_injury' => 'required|image|mimes:jpeg,png,jpg,webp',
             'symptom' => 'required|string',
             'treatment' => 'required|string',
             'arrival' => 'required|date',
@@ -117,6 +122,7 @@ class PatientController extends Controller
         // Handle file upload
         if ($request->hasFile('photo_injury')) {
             $file = $request->file('photo_injury');
+            Log::info('Uploaded file MIME type:', ['mime' => $file->getMimeType()]);
             $filename = time() . '_' . $file->getClientOriginalName();
             $path = $file->storeAs('public/injuries', $filename);
             $data['photo_injury'] = 'storage/injuries/' . $filename;

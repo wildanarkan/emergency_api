@@ -7,44 +7,70 @@
         <h2 class="mb-4">Patients</h2>
 
         {{-- Filter section --}}
-        <form action="{{ route('patient.index') }}" method="GET" class="mb-4">
-            <div class="row">
-                {{-- @if (auth()->user()->role == 1) --}}
-                <div class="col-md-3">
-                    <select name="hospital_id" class="form-control">
-                        <option value="">-- Filter by Hospital --</option>
-                        @foreach ($hospitals as $hospital)
-                            <option value="{{ $hospital->id }}"
-                                {{ request('hospital_id') == $hospital->id ? 'selected' : '' }}>
-                                {{ $hospital->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                {{-- @endif --}}
-                <div class="col-md-3">
-                    <select name="user_id" class="form-control">
-                        <option value="">-- Filter by Nurse --</option>
-                        @foreach ($users as $user)
-                            <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>
-                                {{ $user->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <select name="case_type" class="form-control">
-                        <option value="">-- Filter by Case Type --</option>
-                        <option value="1" {{ request('case_type') == '1' ? 'selected' : '' }}>Non Trauma</option>
-                        <option value="2" {{ request('case_type') == '2' ? 'selected' : '' }}>Trauma</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <button type="submit" class="btn btn-primary">Filter</button>
-                    <a href="{{ route('patient.index') }}" class="btn btn-secondary">Reset</a>
+        {{-- Filter dropdown trigger with right alignment --}}
+        <div class="d-flex justify-content-end mb-3">
+            <div class="dropdown">
+                <button class="btn btn-light text-dark" type="button" id="filterDropdown" data-bs-toggle="dropdown"
+                    aria-expanded="false" style="border: 1px solid #00000063; border-radius: 5px;">
+                    <i class="fa-solid fa-filter"></i> Filter
+                </button>
+
+                {{-- Filter content with border --}}
+                <div class="dropdown-menu p-3 shadow-lg border" style="width: 300px;">
+                    <form action="{{ route('patient.index') }}" method="GET">
+
+                        @if (auth()->user()->role != 2)
+                            <div class="mb-3">
+                                <select name="hospital_id" class="form-select border">
+                                    <option value="">-- Filter by Hospital --</option>
+                                    @foreach ($hospitals as $hospital)
+                                        <option value="{{ $hospital->id }}"
+                                            {{ request('hospital_id') == $hospital->id ? 'selected' : '' }}>
+                                            {{ $hospital->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endif
+
+                        <div class="mb-3">
+                            <select name="user_id" class="form-select border">
+                                <option value="">-- Filter by Nurse --</option>
+                                @foreach ($users as $user)
+                                    <option value="{{ $user->id }}"
+                                        {{ request('user_id') == $user->id ? 'selected' : '' }}>
+                                        {{ $user->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <select name="case_type" class="form-select border">
+                                <option value="">-- Filter by Case Type --</option>
+                                <option value="1" {{ request('case_type') == '1' ? 'selected' : '' }}>Non Trauma
+                                </option>
+                                <option value="2" {{ request('case_type') == '2' ? 'selected' : '' }}>Trauma</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <select name="status" class="form-select border">
+                                <option value="">-- Filter by Status --</option>
+                                <option value="1" {{ request('status') == '1' ? 'selected' : '' }}>Menuju RS</option>
+                                <option value="2" {{ request('status') == '2' ? 'selected' : '' }}>Selesai</option>
+                            </select>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Apply Filter</button>
+                            <a href="{{ route('patient.index') }}" class="btn btn-secondary">Reset</a>
+                        </div>
+                    </form>
                 </div>
             </div>
-        </form>
+        </div>
+
         {{-- Filter section --}}
 
         {{-- Table section --}}
@@ -54,26 +80,24 @@
                     <table class="table table-bordered">
                         <thead>
                             <tr>
-                                <th>Name</th>
+                                <th class="m-table">Name</th>
                                 <th>Age</th>
                                 <th>Gender</th>
-                                <th style="min-width: 120px;">Case Type</th>
-                                <th style="min-width: 120px;">Time Incident</th>
-                                <th>Mechanism</th>
-                                <th>Injury</th>
+                                <th class="s-table">Case Type</th>
+                                <th class="m-table">Time Incident</th>
+                                <th class="x-table">Mechanism</th>
+                                <th class="m-table">Injury</th>
                                 <th>Photo</th>
-                                <th class="text-center alig" style="min-width: 120px;">Symptom</th>
-                                <th>Treatment</th>
-                                <th style="min-width: 120px;">Arrival</th>
+                                <th class="x-table">Symptom</th>
+                                <th class="m-table">Treatment</th>
+                                <th class="m-table">Arrival</th>
                                 @if (auth()->user()->role != 2)
-                                    <th>Hospital</th>
+                                    <th class="s-table">Hospital</th>
                                 @endif
-                                <th>Nurse</th>
-                                <th>Request</th>
-                                <th>Status</th>
-                                {{-- @if (auth()->user()->role == 2) --}}
+                                <th class="s-table">Nurse</th>
+                                <th class="x-table">Request</th>
+                                <th class="s-table">Status</th>
                                 <th>Actions</th>
-                                {{-- @endif --}}
                             </tr>
                         </thead>
                         <tbody>
@@ -102,7 +126,7 @@
                                     <td>{{ $patient->user->name ?? '-' }}</td>
                                     <td>{{ $patient->request ?? '-' }}</td>
                                     <td>{{ $patient->status == 1 ? 'Menuju RS' : 'Selesai' }}</td>
-                                    <td>
+                                    <td class="text-center">
                                         <div class="d-flex gap-2 col">
                                             @if (auth()->user()->role == 2)
                                                 <form action="{{ route('patient.updateStatus', $patient->id) }}"
@@ -147,3 +171,12 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        // Prevent dropdown from closing when clicking inside
+        document.querySelector('.dropdown-menu').addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    </script>
+@endpush

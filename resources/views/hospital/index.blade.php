@@ -30,7 +30,7 @@
                                     <td>{{ $hospital->address }}</td>
                                     <td>{{ $hospital->type }}</td>
                                     <td>{{ $hospital->admin->name ?? '-' }}</td>
-                                    <td>
+                                    <td style="text-align: center">
                                         <a href="{{ route('hospital.edit', $hospital->id) }}"
                                             class="btn btn-warning btn-sm">Edit</a>
                                         <form action="{{ route('hospital.destroy', $hospital->id) }}" method="POST"

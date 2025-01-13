@@ -246,6 +246,25 @@
         margin-left: 0;
     }
 
+    th {
+        text-align: center;
+    }
+
+    td{
+        font-size: 13px
+    }
+    
+    .s-table {
+        min-width: 100px;
+    }
+
+    .m-table {
+        min-width: 150px;
+    }
+    .x-table {
+        min-width: 220px;
+    }
+
     .modal-image {
         max-width: 800px;
         max-height: 400px;
