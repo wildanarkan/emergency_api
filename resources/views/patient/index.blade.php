@@ -80,10 +80,10 @@
                     <table class="table table-bordered">
                         <thead>
                             <tr>
+                                <th class="s-table">Case Type</th>
                                 <th class="m-table">Name</th>
                                 <th>Age</th>
                                 <th>Gender</th>
-                                <th class="s-table">Case Type</th>
                                 <th class="m-table">Time Incident</th>
                                 <th class="x-table">Mechanism</th>
                                 <th class="m-table">Injury</th>
@@ -103,10 +103,10 @@
                         <tbody>
                             @foreach ($patients as $patient)
                                 <tr>
+                                    <td>{{ $patient->case == 1 ? 'Non Trauma' : 'Trauma' }}</td>
                                     <td>{{ $patient->name ?? '-' }}</td>
                                     <td>{{ $patient->age ?? '-' }}</td>
                                     <td>{{ $patient->gender == 1 ? 'Male' : 'Female' }}</td>
-                                    <td>{{ $patient->case == 1 ? 'Non Trauma' : 'Trauma' }}</td>
                                     <td>{{ \Carbon\Carbon::parse($patient->time_incident)->format('d M Y : H:i') ?? '-' }}
                                     </td>
                                     <td>{{ $patient->mechanism ?? '-' }}</td>

@@ -6,14 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emergency - @yield('title')</title>
     <link rel="icon" type="image/png" href="{{ asset('storage/logo_sipongga.png') }}">
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-
-
-
-    {{-- @stack('styles') --}}
 </head>
 
 <body>
@@ -63,6 +57,12 @@
                         <span>Users</span>
                     </a>
                 </li>
+                <li>
+                    <a href="{{ route('notif.index') }}" class="{{ Request::is('notif*') ? 'active' : '' }}">
+                        <i class="fas fa-bell"></i>
+                        <span>Notifs</span>
+                    </a>
+                </li>
             @endif
             <li>
                 <a href="{{ route('patient.index') }}" class="{{ Request::is('patient*') ? 'active' : '' }}">
@@ -73,37 +73,7 @@
         </ul>
     </nav>
 
-    <!-- Navbar -->
-    <nav class="main-navbar px-3 d-flex align-items-center">
-        <button type="button" id="sidebarCollapse" class="btn btn-light">
-            <i class="fas fa-bars"></i>
-        </button>
-
-        <div class="ms-auto d-flex align-items-center">
-            <button class="btn btn-light me-3 position-relative">
-                <i class="fas fa-bell"></i>
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                    5
-                    <span class="visually-hidden">unread messages</span>
-                </span>
-            </button>
-
-            <div class="dropdown">
-                <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                    {{ Auth::user()->name }}
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button type="submit" class="dropdown-item">Logout</button>
-                        </form>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
+    @include('navbar')
 
     <!-- Main Content -->
     <main class="main-content">
@@ -250,10 +220,10 @@
         text-align: center;
     }
 
-    td{
+    td {
         font-size: 13px
     }
-    
+
     .s-table {
         min-width: 100px;
     }
@@ -261,6 +231,7 @@
     .m-table {
         min-width: 150px;
     }
+
     .x-table {
         min-width: 220px;
     }

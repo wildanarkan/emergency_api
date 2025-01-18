@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Patient;
 use App\Models\Hospital;
+use App\Models\Notif;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -138,6 +139,17 @@ class PatientController extends Controller
             }
 
             $patient = Patient::create($data);
+
+            // Create notification if hospital_id exists
+            if ($patient->hospital_id) {
+                $notif = Notif::create([
+                    'desc' => $patient->arrival,
+                    'hospital_id' => $patient->hospital_id,
+                    'status' => 1
+                ]);
+                Log::info('Notification created:', $notif->toArray());
+            }
+
             Log::info('Patient created successfully (JSON response):', $patient->toArray());
             return response()->json([
                 'success' => true,
@@ -147,6 +159,17 @@ class PatientController extends Controller
 
         $request->validate($rules);
         $patient = Patient::create($data);
+
+        // Create notification if hospital_id exists
+        if ($patient->hospital_id) {
+            $notif = Notif::create([
+                'desc' => $patient->arrival,
+                'hospital_id' => $patient->hospital_id,
+                'status' => 1
+            ]);
+            Log::info('Notification created:', $notif->toArray());
+        }
+
         Log::info('Patient created successfully (Redirect response):', $patient->toArray());
 
         return redirect()->route('patient.index')->with('success', 'Patient created successfully');
