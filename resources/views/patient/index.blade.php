@@ -90,12 +90,12 @@
                                 <th>Photo</th>
                                 <th class="x-table">Symptom</th>
                                 <th class="m-table">Treatment</th>
-                                <th class="m-table">Arrival</th>
-                                @if (auth()->user()->role != 2)
-                                    <th class="s-table">Hospital</th>
-                                @endif
-                                <th class="s-table">Nurse</th>
+                                <th class="x-table">Estimated of Arrival</th>
                                 <th class="x-table">Request</th>
+                                @if (auth()->user()->role != 2)
+                                    <th class="m-table">Hospital</th>
+                                @endif
+                                <th class="x-table">Petugas Prehospital</th>
                                 <th class="s-table">Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -120,11 +120,11 @@
                                     <td>{{ $patient->symptom ?? '-' }}</td>
                                     <td>{{ $patient->treatment ?? '-' }}</td>
                                     <td>{{ \Carbon\Carbon::parse($patient->arrival)->format('d M Y : H:i') ?? '-' }}</td>
+                                    <td>{{ $patient->request ?? '-' }}</td>
                                     @if (auth()->user()->role != 2)
                                         <td>{{ $patient->hospital->name ?? '-' }}</td>
                                     @endif
                                     <td>{{ $patient->user->name ?? '-' }}</td>
-                                    <td>{{ $patient->request ?? '-' }}</td>
                                     <td>{{ $patient->status == 1 ? 'Menuju RS' : 'Selesai' }}</td>
                                     <td class="text-center">
                                         <div class="d-flex gap-2 col">
