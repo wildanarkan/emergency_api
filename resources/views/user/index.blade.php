@@ -7,7 +7,7 @@
     <div class="container-fluid">
         <h2 class="mb-4">Users</h2>
         <a href="{{ route('user.create') }}" class="btn btn-primary mb-3">Add New Nurse</a>
-        
+
         <div class="card shadow mb-4">
             <div class="card-body">
                 <div class="table-responsive">
@@ -18,6 +18,7 @@
                                 <th>Email</th>
                                 <th>Phone</th>
                                 <th>Role</th>
+                                <th>Team</th>
                                 <th>Hospital</th>
                             </tr>
                         </thead>
@@ -31,19 +32,23 @@
                                         @switch($userData->role)
                                             @case(1)
                                                 System Admin
-                                                @break
+                                            @break
+
                                             @case(2)
                                                 Hospital Admin
-                                                @break
+                                            @break
+
                                             @case(3)
                                                 Nurse
-                                                @break
+                                            @break
+
                                             @default
                                                 Unknown Role
                                         @endswitch
                                     </td>
+                                    <td>{{ $userData->team ?? '-'}}</td>
                                     <td>
-                                        @if($userData->role == 2) {{-- Jika user adalah Hospital Admin --}}
+                                        @if ($userData->role == 2)
                                             @php
                                                 $userHospital = $hospitals->where('user_id', $userData->id)->first();
                                             @endphp
@@ -61,15 +66,15 @@
                                         </form>
                                     </td> --}}
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="text-center">No users found</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center">No users found</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-@endsection
+    @endsection

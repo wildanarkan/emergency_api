@@ -43,12 +43,12 @@ class UserController extends Controller
     {
         // $user = null;
         $hospital = Hospital::all();
-        
+
         $user = auth()->user();
         if ($user->role == 2) { // Hospital Admin
 
             return redirect()->route('patient.index');
-        }else{
+        } else {
             $user = null;
         }
 
@@ -63,14 +63,13 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        $authUser = auth()->user();
-
         $rules = [
             'email' => 'required|string|email|unique:user',
             'password' => 'required|string|min:6',
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:15',
             'role' => 'required|string|max:15',
+            'team' => 'required|string|max:255',
         ];
 
         if ($request->expectsJson()) {
@@ -91,6 +90,7 @@ class UserController extends Controller
             'name' => $request->name,
             'phone' => $request->phone,
             'role' => 3,
+            'team' => $request->team,
         ]);
 
 

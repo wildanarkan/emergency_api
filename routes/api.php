@@ -4,12 +4,14 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HospitalController;
 use App\Http\Controllers\PatientController;
+use App\Http\Controllers\UserController;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 // Public routes
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
 Route::post('login-app', [AuthController::class, 'loginApp']);
+Route::post('user', [UserController::class, 'store']);
 
 // Protected routes
 Route::middleware('auth:sanctum', EnsureFrontendRequestsAreStateful::class)->group(function () {

@@ -22,7 +22,8 @@ class User extends Authenticatable
         'password',
         'name',
         'phone',
-        'role', // 1:system admin / 2:hospital admin / 3:nurse
+        'role',
+        'team',
     ];
 
     /**
